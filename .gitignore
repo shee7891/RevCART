@@ -1,0 +1,11 @@
+# Node
+node_modules/
+dist/
+.env
+.vscode/
+.DS_Store
+coverage/
+.idea/
+# Angular build files
+/.angular
+EOF

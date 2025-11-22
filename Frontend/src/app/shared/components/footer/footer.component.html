@@ -1,0 +1,77 @@
+<footer class="bg-gray-900 text-gray-300 mt-12">
+    <div class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            <!-- Company Info -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <lucide-icon [img]="ShoppingCart" class="h-6 w-6 text-primary"></lucide-icon>
+                    <span class="text-xl font-bold text-white">RevCart</span>
+                </div>
+                <p class="text-sm mb-4">
+                    Your one-stop shop for fresh groceries and daily essentials. Quality products delivered to your
+                    doorstep.
+                </p>
+            </div>
+
+            <!-- Shop -->
+            <div>
+                <h3 class="text-white font-semibold mb-4">Shop</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a routerLink="/categories" class="hover:text-primary">All Categories</a></li>
+                    <li><a routerLink="/best-sellers" class="hover:text-primary">Best Sellers</a></li>
+                    <li><a routerLink="/new-arrivals" class="hover:text-primary">New Arrivals</a></li>
+                    <li><a routerLink="/deals" class="hover:text-primary">Deals & Offers</a></li>
+                </ul>
+            </div>
+
+            <!-- Account -->
+            <div>
+                <h3 class="text-white font-semibold mb-4">Account</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a routerLink="/profile" class="hover:text-primary">My Profile</a></li>
+                    <li><a routerLink="/orders" class="hover:text-primary">Order History</a></li>
+                    <li><a routerLink="/wishlist" class="hover:text-primary">Wishlist</a></li>
+                    <li><a routerLink="/cart" class="hover:text-primary">Shopping Cart</a></li>
+                </ul>
+            </div>
+
+            <!-- Contact -->
+            <div>
+                <h3 class="text-white font-semibold mb-4">Contact Us</h3>
+                <ul class="space-y-3 text-sm">
+                    <li class="flex items-center gap-2">
+                        <lucide-icon [img]="Phone" class="h-4 w-4"></lucide-icon>
+                        <span>+1 (555) 123-4567</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <lucide-icon [img]="Mail" class="h-4 w-4"></lucide-icon>
+                        <span>support&#64;revcart.com</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <lucide-icon [img]="MapPin" class="h-4 w-4 mt-1"></lucide-icon>
+                        <span>123 Commerce Street<br>New York, NY 10001</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Social Media -->
+        <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p class="text-sm">© {{ currentYear }} RevCart. All rights reserved.</p>
+            <div class="flex gap-4">
+                <a href="#" class="hover:text-primary">
+                    <lucide-icon [img]="Facebook" class="h-5 w-5"></lucide-icon>
+                </a>
+                <a href="#" class="hover:text-primary">
+                    <lucide-icon [img]="Twitter" class="h-5 w-5"></lucide-icon>
+                </a>
+                <a href="#" class="hover:text-primary">
+                    <lucide-icon [img]="Instagram" class="h-5 w-5"></lucide-icon>
+                </a>
+                <a href="#" class="hover:text-primary">
+                    <lucide-icon [img]="Youtube" class="h-5 w-5"></lucide-icon>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>

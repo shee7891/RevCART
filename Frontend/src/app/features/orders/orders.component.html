@@ -1,0 +1,57 @@
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">My Orders</h1>
+
+    @if (orders().length === 0) {
+    <div class="text-center py-12">
+        <lucide-icon [img]="Package" class="h-24 w-24 text-gray-300 mx-auto mb-4"></lucide-icon>
+        <h2 class="text-2xl font-semibold mb-2">No orders yet</h2>
+        <p class="text-gray-600 mb-6">Start shopping to see your orders here</p>
+        <a routerLink="/products" class="inline-block px-6 py-3 bg-primary text-white rounded-md hover:bg-primary/90">
+            Browse Products
+        </a>
+    </div>
+    } @else {
+    <div class="space-y-6">
+        @for (order of orders(); track order.id) {
+        <div class="bg-white rounded-lg border p-6">
+            <!-- Order Header -->
+            <div class="flex flex-wrap items-center justify-between mb-4 pb-4 border-b">
+                <div>
+                    <h3 class="font-bold text-lg">Order {{ order.id }}</h3>
+                    <p class="text-sm text-gray-600">Placed on {{ order.date }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span
+                        [class]="'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ' + getStatusClass(order.status)">
+                        <lucide-icon [img]="getStatusIcon(order.status)" class="h-4 w-4"></lucide-icon>
+                        {{ getStatusText(order.status) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="space-y-3 mb-4">
+                @for (item of order.items; track item.id) {
+                <div class="flex justify-between text-sm">
+                    <span>{{ item.name }} × {{ item.quantity }}</span>
+                    <span class="font-medium">${{ (item.price * item.quantity).toFixed(2) }}</span>
+                </div>
+                }
+            </div>
+
+            <!-- Order Footer -->
+            <div class="flex flex-wrap items-center justify-between pt-4 border-t">
+                <div class="text-sm text-gray-600">
+                    <p>Delivery Address:</p>
+                    <p class="font-medium text-gray-900">{{ order.deliveryAddress }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-600">Total Amount</p>
+                    <p class="text-2xl font-bold text-primary">${{ order.total.toFixed(2) }}</p>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
+</div>

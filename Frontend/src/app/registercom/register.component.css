@@ -1,5 +1,0 @@
-/* reuse login card styles (simplified) */
-.rc-page{ display:flex; justify-content:center; padding:40px 20px; }
-.rc-card{ width:420px; background:#fff; border-radius:8px; padding:28px; box-shadow:0 2px 4px rgba(0,0,0,0.04); text-align:left }
-.rc-card h2{ text-align:center; color:#0b6b4a }
-.btn{ margin-top:12px; width:100%; padding:10px; border-radius:8px; background:#13a56a; color:#fff; border:none }

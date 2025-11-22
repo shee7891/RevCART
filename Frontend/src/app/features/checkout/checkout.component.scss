@@ -1,0 +1,130 @@
+.checkout {
+    &__container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    &__content {
+        display: grid;
+        gap: 2rem;
+
+        @media (min-width: 1024px) {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    &__section {
+        &-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+    }
+
+    &__address-form {
+        display: grid;
+        gap: 1rem;
+
+        &-row {
+            display: grid;
+            gap: 1rem;
+
+            @media (min-width: 768px) {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    }
+
+    &__payment {
+        &-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        &-option {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+
+            &:hover {
+                border-color: #cbd5e1;
+            }
+
+            &--selected {
+                border-color: #059669;
+                background-color: rgba(5, 150, 105, 0.05);
+            }
+
+            input[type="radio"] {
+                margin-right: 0.75rem;
+            }
+        }
+    }
+
+    &__summary {
+        position: sticky;
+        top: 5rem;
+        height: fit-content;
+
+        &-items {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            &::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+            }
+        }
+
+        &-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            font-size: 0.875rem;
+
+            &:not(:last-child) {
+                border-bottom: 1px solid #f1f5f9;
+            }
+        }
+
+        &-totals {
+            border-top: 2px solid #e2e8f0;
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+
+        &-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+
+            &--total {
+                font-size: 1.25rem;
+                font-weight: 700;
+                padding-top: 1rem;
+                border-top: 1px solid #e2e8f0;
+                margin-top: 0.5rem;
+            }
+        }
+    }
+}

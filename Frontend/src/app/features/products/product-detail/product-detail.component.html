@@ -1,0 +1,114 @@
+<div class="container mx-auto px-4 py-8">
+    @if (loading()) {
+    <div class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+    } @else if (product()) {
+    <div class="grid md:grid-cols-2 gap-8 mb-12">
+        <!-- Product Image -->
+        <div class="bg-gray-100 rounded-lg overflow-hidden aspect-square">
+            <img [src]="product()!.image" [alt]="product()!.name" class="w-full h-full object-cover" />
+        </div>
+
+        <!-- Product Info -->
+        <div>
+            <h1 class="text-3xl font-bold mb-2">{{ product()!.name }}</h1>
+            <p class="text-gray-600 mb-4">{{ product()!.category }}</p>
+
+            <!-- Rating -->
+            <div class="flex items-center gap-2 mb-6">
+                <div class="flex items-center gap-1">
+                    @for (star of [1,2,3,4,5]; track star) {
+                    <lucide-icon [img]="Star" class="h-5 w-5" [class.fill-yellow-400]="star <= product()!.rating"
+                        [class.text-yellow-400]="star <= product()!.rating"
+                        [class.text-gray-300]="star > product()!.rating"></lucide-icon>
+                    }
+                </div>
+                <span class="text-sm text-gray-600">
+                    {{ product()!.rating }} ({{ product()!.reviews }} reviews)
+                </span>
+            </div>
+
+            <!-- Price -->
+            <div class="mb-6">
+                <p class="text-4xl font-bold text-primary mb-1">
+                    ${{ product()!.price.toFixed(2) }}
+                </p>
+                <p class="text-gray-600">{{ product()!.unit }}</p>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-6">
+                <h3 class="font-semibold mb-2">Description</h3>
+                <p class="text-gray-600">{{ product()!.description }}</p>
+            </div>
+
+            <!-- Quantity Selector -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Quantity</label>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center border rounded-md">
+                        <button (click)="decreaseQuantity()" class="px-4 py-2 hover:bg-gray-100">
+                            -
+                        </button>
+                        <span class="px-4 py-2 border-x">{{ quantity() }}</span>
+                        <button (click)="increaseQuantity()" class="px-4 py-2 hover:bg-gray-100">
+                            +
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 mb-6">
+                <button (click)="addToCart()" [disabled]="!product()!.inStock"
+                    class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-md hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    <lucide-icon [img]="ShoppingCart" class="h-5 w-5"></lucide-icon>
+                    {{ product()!.inStock ? 'Add to Cart' : 'Out of Stock' }}
+                </button>
+                <button (click)="toggleWishlist()" class="px-6 py-3 border rounded-md hover:bg-gray-50"
+                    [class.text-red-500]="isInWishlist()" [class.border-red-500]="isInWishlist()">
+                    <lucide-icon [img]="Heart" class="h-5 w-5" [class.fill-current]="isInWishlist()"></lucide-icon>
+                </button>
+            </div>
+
+            <!-- Features -->
+            <div class="border-t pt-6 space-y-4">
+                <div class="flex items-center gap-3">
+                    <lucide-icon [img]="Truck" class="h-5 w-5 text-primary"></lucide-icon>
+                    <div>
+                        <p class="font-medium">Free Delivery</p>
+                        <p class="text-sm text-gray-600">On orders over $50</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <lucide-icon [img]="Shield" class="h-5 w-5 text-primary"></lucide-icon>
+                    <div>
+                        <p class="font-medium">Secure Payment</p>
+                        <p class="text-sm text-gray-600">100% secure transactions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    @if (relatedProducts().length > 0) {
+    <div>
+        <h2 class="text-2xl font-bold mb-6">Related Products</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
+            <app-product-card [product]="relatedProduct"></app-product-card>
+            }
+        </div>
+    </div>
+    }
+    } @else {
+    <div class="text-center py-12">
+        <h2 class="text-2xl font-bold mb-4">Product Not Found</h2>
+        <a routerLink="/products" class="text-primary hover:underline">
+            Back to Products
+        </a>
+    </div>
+    }
+</div>

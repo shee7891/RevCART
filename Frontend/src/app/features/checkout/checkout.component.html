@@ -1,0 +1,105 @@
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Checkout</h1>
+
+    <form (ngSubmit)="onSubmit()" class="grid lg:grid-cols-3 gap-8">
+        <!-- Checkout Form -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Delivery Address -->
+            <div class="bg-white rounded-lg border p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <lucide-icon [img]="MapPin" class="h-5 w-5 text-primary"></lucide-icon>
+                    <h2 class="text-xl font-bold">Delivery Address</h2>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Full Name *</label>
+                        <input type="text" [(ngModel)]="formData().fullName" name="fullName" required
+                            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Phone *</label>
+                        <input type="tel" [(ngModel)]="formData().phone" name="phone" required
+                            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Address *</label>
+                        <textarea [(ngModel)]="formData().address" name="address" required rows="3"
+                            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">City *</label>
+                            <input type="text" [(ngModel)]="formData().city" name="city" required
+                                class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Postal Code *</label>
+                            <input type="text" [(ngModel)]="formData().postalCode" name="postalCode" required
+                                class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="bg-white rounded-lg border p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <lucide-icon [img]="CreditCard" class="h-5 w-5 text-primary"></lucide-icon>
+                    <h2 class="text-xl font-bold">Payment Method</h2>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 p-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                        <input type="radio" [(ngModel)]="formData().paymentMethod" name="paymentMethod" value="card"
+                            class="w-4 h-4" />
+                        <span>Credit/Debit Card</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                        <input type="radio" [(ngModel)]="formData().paymentMethod" name="paymentMethod" value="cod"
+                            class="w-4 h-4" />
+                        <span>Cash on Delivery</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg border p-6 sticky top-4">
+                <h2 class="text-xl font-bold mb-4">Order Summary</h2>
+
+                <div class="space-y-3 mb-6">
+                    @for (item of cartService.items(); track item.id) {
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">{{ item.name }} × {{ item.quantity }}</span>
+                        <span class="font-medium">${{ (item.price * item.quantity).toFixed(2) }}</span>
+                    </div>
+                    }
+                </div>
+
+                <div class="border-t pt-4 space-y-3 mb-6">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Subtotal</span>
+                        <span class="font-medium">${{ cartService.total().toFixed(2) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Delivery Fee</span>
+                        <span class="font-medium">${{ deliveryFee.toFixed(2) }}</span>
+                    </div>
+                    <div class="border-t pt-3 flex justify-between text-lg font-bold">
+                        <span>Total</span>
+                        <span class="text-primary">${{ grandTotal.toFixed(2) }}</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full px-6 py-3 bg-primary text-white rounded-md hover:bg-primary/90">
+                    Place Order
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

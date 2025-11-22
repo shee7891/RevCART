@@ -1,0 +1,30 @@
+<div class="page-wrap">
+<header class="topbar">
+<div class="brand">RevCart</div>
+<div class="search"><input placeholder="Search for products..." /></div>
+<div class="login">Login</div>
+</header>
+
+
+<main class="container">
+<h1 class="title">Best Sellers</h1>
+<p class="subtitle">Most popular products loved by our customers</p>
+
+
+<div class="filters">
+<button class="chip active">All Categories</button>
+<button class="chip">Vegetables</button>
+<button class="chip">Fruits</button>
+<button class="chip">Dairy</button>
+<button class="chip">Bakery</button>
+</div>
+
+
+<section class="grid">
+<app-product-card *ngFor="let p of products" [product]="p"></app-product-card>
+</section>
+</main>
+
+
+<footer class="footer">© 2025 RevCart. All rights reserved.</footer>
+</div>

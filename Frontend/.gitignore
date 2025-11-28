@@ -40,3 +40,96 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+
+###############################################
+# Maven / Gradle
+###############################################
+/target/
+/build/
+/out/
+
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+
+###############################################
+# Java
+###############################################
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+
+###############################################
+# Spring Boot
+###############################################
+# Exclude application secrets
+application.properties
+application.yml
+application-local.properties
+application-dev.properties
+application-test.properties
+application-prod.properties
+
+# If you keep templates for example
+# !application-example.properties
+
+###############################################
+# Logs
+###############################################
+logs/
+*.log
+*.log.*
+
+###############################################
+# MySQL / MongoDB
+###############################################
+# Ignore database dumps
+*.sql
+*.sql.gz
+*.dump
+*.bson
+*.json
+
+###############################################
+# IDEs
+###############################################
+# IntelliJ
+.idea/
+*.iws
+*.ipr
+*.iml
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+###############################################
+# OS files
+###############################################
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+###############################################
+# Environment / Security
+###############################################
+.env
+.env.*
+*.key
+*.pem
+secrets/

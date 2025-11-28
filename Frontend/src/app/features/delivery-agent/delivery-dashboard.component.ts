@@ -1,9 +1,24 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { OrderService } from '../../../app/core/services/order.service';
 import { Order } from '../../core/models/order.model';
+import { environment } from '../../../environments/environment';
 import { LucideAngularModule, Package, MapPin, Clock, CheckCircle } from 'lucide-angular';
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface DeliveryStats {
+  assigned: number;
+  inTransit: number;
+  deliveredToday: number;
+  pending: number;
+}
 
 @Component({
   selector: 'app-delivery-dashboard',
@@ -22,6 +37,7 @@ import { LucideAngularModule, Package, MapPin, Clock, CheckCircle } from 'lucide
               <lucide-icon [img]="Package" class="h-5 w-5 text-blue-600"></lucide-icon>
             </div>
             <p class="text-3xl font-bold">{{ assignedOrders.length }}</p>
+            <p class="text-xs text-blue-600 mt-1">Orders assigned to you</p>
           </div>
 
           <div class="bg-white p-6 rounded-lg border">
@@ -30,6 +46,7 @@ import { LucideAngularModule, Package, MapPin, Clock, CheckCircle } from 'lucide
               <lucide-icon [img]="MapPin" class="h-5 w-5 text-orange-600"></lucide-icon>
             </div>
             <p class="text-3xl font-bold">{{ inTransitOrders.length }}</p>
+            <p class="text-xs text-orange-600 mt-1">Currently delivering</p>
           </div>
 
           <div class="bg-white p-6 rounded-lg border">
@@ -38,6 +55,7 @@ import { LucideAngularModule, Package, MapPin, Clock, CheckCircle } from 'lucide
               <lucide-icon [img]="CheckCircle" class="h-5 w-5 text-green-600"></lucide-icon>
             </div>
             <p class="text-3xl font-bold">{{ deliveredToday }}</p>
+            <p class="text-xs text-green-600 mt-1">Completed today</p>
           </div>
 
           <div class="bg-white p-6 rounded-lg border">
@@ -46,9 +64,15 @@ import { LucideAngularModule, Package, MapPin, Clock, CheckCircle } from 'lucide
               <lucide-icon [img]="Clock" class="h-5 w-5 text-yellow-600"></lucide-icon>
             </div>
             <p class="text-3xl font-bold">{{ pendingOrders.length }}</p>
+            <p class="text-xs text-yellow-600 mt-1">Awaiting assignment</p>
           </div>
         </div>
 
+        @if (isLoading) {
+          <div class="text-center py-8">
+            <p class="text-muted-foreground">Loading deliveries...</p>
+          </div>
+        } @else {
         <!-- Assigned Orders -->
         <div class="bg-white rounded-lg border p-6">
           <h2 class="text-xl font-bold mb-4">Assigned Deliveries</h2>
@@ -105,12 +129,14 @@ import { LucideAngularModule, Package, MapPin, Clock, CheckCircle } from 'lucide
             }
           </div>
         </div>
+        }
       </div>
     </div>
   `
 })
 export class DeliveryDashboardComponent implements OnInit {
   orderService = inject(OrderService);
+  http = inject(HttpClient);
 
   readonly Package = Package;
   readonly MapPin = MapPin;
@@ -121,33 +147,115 @@ export class DeliveryDashboardComponent implements OnInit {
   inTransitOrders: Order[] = [];
   pendingOrders: Order[] = [];
   deliveredToday = 0;
+  isLoading = false;
 
   ngOnInit(): void {
     this.loadDeliveries();
   }
 
   loadDeliveries(): void {
-    this.orderService.getAllOrders().subscribe(orders => {
-      this.assignedOrders = orders.filter(o =>
-        o.status === 'processing' || o.status === 'in_transit'
-      );
-      this.inTransitOrders = orders.filter(o => o.status === 'in_transit');
-      this.pendingOrders = orders.filter(o => o.status === 'processing');
-      this.deliveredToday = orders.filter(o =>
-        o.status === 'delivered' && this.isToday(o.date)
-      ).length;
+    this.isLoading = true;
+
+    // Load statistics
+    this.http.get<ApiResponse<DeliveryStats>>(`${environment.apiUrl}/delivery/stats`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.deliveredToday = response.data.deliveredToday;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load delivery statistics:', err);
+      }
+    });
+
+    // Load assigned orders
+    this.http.get<ApiResponse<Order[]>>(`${environment.apiUrl}/delivery/orders/assigned`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.assignedOrders = response.data.map(this.mapBackendOrder);
+        }
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load assigned orders:', err);
+        this.isLoading = false;
+      }
+    });
+
+    // Load in transit orders
+    this.http.get<ApiResponse<Order[]>>(`${environment.apiUrl}/delivery/orders/in-transit`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.inTransitOrders = response.data.map(this.mapBackendOrder);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load in transit orders:', err);
+      }
+    });
+
+    // Load pending orders
+    this.http.get<ApiResponse<Order[]>>(`${environment.apiUrl}/delivery/orders/pending`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.pendingOrders = response.data.map(this.mapBackendOrder);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load pending orders:', err);
+      }
     });
   }
 
   updateOrderStatus(orderId: string, status: Order['status']): void {
-    this.orderService.updateOrderStatus(orderId, status).subscribe(() => {
-      this.loadDeliveries();
+    // Map frontend status to backend OrderStatus enum
+    const statusMap: { [key: string]: string } = {
+      'in_transit': 'OUT_FOR_DELIVERY',
+      'delivered': 'DELIVERED',
+      'processing': 'PACKED'
+    };
+
+    const backendStatus = statusMap[status] || status.toUpperCase();
+
+    this.http.post<ApiResponse<any>>(`${environment.apiUrl}/delivery/orders/${orderId}/status`, {
+      status: backendStatus,
+      note: `Status updated to ${backendStatus}`
+    }).subscribe({
+      next: () => {
+        this.loadDeliveries();
+      },
+      error: (err) => {
+        console.error('Failed to update order status:', err);
+        const errorMsg = err.error?.message || 'Failed to update order status. Please try again.';
+        alert(errorMsg);
+      }
     });
   }
 
-  private isToday(dateString: string): boolean {
-    const date = new Date(dateString);
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
+  private mapBackendOrder = (dto: any): Order => ({
+    id: String(dto.id),
+    date: dto.createdAt ? new Date(dto.createdAt).toLocaleDateString() : '',
+    status: this.mapStatus(dto.status),
+    items: dto.items ? dto.items.map((i: any) => ({
+      id: String(i.productId),
+      name: i.productName,
+      quantity: i.quantity,
+      price: Number(i.unitPrice)
+    })) : [],
+    total: Number(dto.totalAmount || 0),
+    deliveryAddress: dto.shippingAddress
+      ? `${dto.shippingAddress.line1}, ${dto.shippingAddress.city}, ${dto.shippingAddress.state} ${dto.shippingAddress.postalCode}`
+      : ''
+  });
+
+  private mapStatus(backendStatus: string): Order['status'] {
+    const statusMap: { [key: string]: Order['status'] } = {
+      'PLACED': 'processing',
+      'PACKED': 'processing',
+      'OUT_FOR_DELIVERY': 'in_transit',
+      'DELIVERED': 'delivered',
+      'CANCELLED': 'cancelled'
+    };
+    return statusMap[backendStatus?.toUpperCase()] || 'processing';
   }
 }

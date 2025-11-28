@@ -6,20 +6,6 @@ import { Observable, of, delay, tap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User, LoginCredentials, SignupData } from '../models/user.model';
 
-interface LoginResponse {
-  token: string;
-  userId: number;
-  email: string;
-  name: string;
-  role: string;
-}
-
-interface RegisterRequest {
-  name: string;
-  email: string;
-  password: string;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -64,71 +50,39 @@ export class AuthService {
   }
 
   login(credentials: LoginCredentials): Observable<User> {
-    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      map((response) => {
-        // Store token immediately
-        if (isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('revcart_token', response.token);
-        }
-        return {
-          id: response.userId.toString(),
-          email: response.email,
-          name: response.name,
-          role: this.normalizeRole(response.role)
-        } as User;
-      }),
-      tap((user) => {
-        this.userSignal.set(user);
-        if (isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('revcart_user', JSON.stringify(user));
-        }
-      })
-    );
+    const mockUser: User = {
+      id: '1',
+      email: credentials.email,
+      name: credentials.email.split('@')[0],
+      role: credentials.email.includes('admin') ? 'admin' :
+            credentials.email.includes('delivery') ? 'delivery_agent' : 'customer'
+    };
+
+    this.userSignal.set(mockUser);
+
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('revcart_user', JSON.stringify(mockUser));
+    }
+
+    return of(mockUser).pipe(delay(500));
   }
 
   signup(data: SignupData): Observable<User> {
-    const registerReq: RegisterRequest = {
-      name: data.name,
+    const newUser: User = {
+      id: Date.now().toString(),
       email: data.email,
-      password: data.password
+      name: data.name,
+      phone: data.phone,
+      role: 'customer'
     };
 
-    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/register`, registerReq).pipe(
-      map((response) => {
-        // Store token immediately
-        if (isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('revcart_token', response.token);
-        }
-        return {
-          id: response.userId.toString(),
-          email: response.email,
-          name: response.name,
-          phone: data.phone,
-          role: 'customer' as const
-        } as User;
-      }),
-      tap((user) => {
-        this.userSignal.set(user);
-        if (isPlatformBrowser(this.platformId)) {
-          localStorage.setItem('revcart_user', JSON.stringify(user));
-        }
-      })
-    );
-  }
+    this.userSignal.set(newUser);
 
-  private normalizeRole(backendRole: string): 'customer' | 'admin' | 'delivery_agent' {
-    // Backend returns roles like "ROLE_ADMIN", "ROLE_CUSTOMER", "ROLE_DELIVERY"
-    // Frontend expects "admin", "customer", "delivery_agent"
-    const roleMap: { [key: string]: 'customer' | 'admin' | 'delivery_agent' } = {
-      'ROLE_ADMIN': 'admin',
-      'ROLE_CUSTOMER': 'customer',
-      'ROLE_DELIVERY': 'delivery_agent',
-      'admin': 'admin',
-      'customer': 'customer',
-      'delivery_agent': 'delivery_agent'
-    };
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('revcart_user', JSON.stringify(newUser));
+    }
 
-    return roleMap[backendRole] || 'customer';
+    return of(newUser).pipe(delay(500));
   }
 
   logout(): void {

@@ -23,4 +23,5 @@ export interface SignupData {
   password: string;
   name: string;
   phone?: string;
+  role?: 'CUSTOMER' | 'ADMIN' | 'DELIVERY_AGENT';
 }

@@ -1,7 +1,9 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { Order } from '../../core/models/order.model';
+import { OrderService } from '../../core/services/order.service';
 import { LucideAngularModule, Package, Truck, CheckCircle, XCircle } from 'lucide-angular';
 
 @Component({
@@ -12,7 +14,11 @@ import { LucideAngularModule, Package, Truck, CheckCircle, XCircle } from 'lucid
     // styleUrls: ['./orders.component.scss']
 })
 export class OrdersComponent implements OnInit {
+    private orderService = inject(OrderService);
+    private router = inject(Router);
     orders = signal<Order[]>([]);
+    isLoading = signal<boolean>(false);
+    errorMessage = signal<string>('');
 
     // Icons
     readonly Package = Package;
@@ -22,34 +28,31 @@ export class OrdersComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadOrders();
+        // Reload orders when navigating to this page
+        this.router.events
+            .pipe(filter(event => event instanceof NavigationEnd))
+            .subscribe(() => {
+                if (this.router.url === '/orders') {
+                    this.loadOrders();
+                }
+            });
     }
 
     loadOrders(): void {
-        // Mock orders data
-        const mockOrders: Order[] = [
-            {
-                id: 'ORD-001',
-                date: '2024-01-15',
-                status: 'delivered',
-                items: [
-                    { id: '1', name: 'Fresh Tomatoes', quantity: 2, price: 2.99 },
-                    { id: '2', name: 'Organic Bananas', quantity: 1, price: 1.99 }
-                ],
-                total: 7.97,
-                deliveryAddress: '123 Main St, City, 12345'
+        this.isLoading.set(true);
+        this.errorMessage.set('');
+        this.orderService.getUserOrders('').subscribe({
+            next: (orders) => {
+                this.orders.set(orders);
+                this.isLoading.set(false);
             },
-            {
-                id: 'ORD-002',
-                date: '2024-01-20',
-                status: 'in_transit',
-                items: [
-                    { id: '3', name: 'Fresh Milk', quantity: 2, price: 3.49 }
-                ],
-                total: 6.98,
-                deliveryAddress: '123 Main St, City, 12345'
+            error: (err) => {
+                console.error('Failed to load orders:', err);
+                this.errorMessage.set('Failed to load orders. Please try again.');
+                this.isLoading.set(false);
+                this.orders.set([]);
             }
-        ];
-        this.orders.set(mockOrders);
+        });
     }
 
     getStatusClass(status: Order['status']): string {

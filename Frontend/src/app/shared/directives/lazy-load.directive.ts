@@ -1,4 +1,5 @@
-import { Directive, ElementRef, OnInit, OnDestroy } from '@angular/core';
+import { Directive, ElementRef, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 @Directive({
     selector: '[appLazyLoad]',
@@ -7,9 +8,13 @@ import { Directive, ElementRef, OnInit, OnDestroy } from '@angular/core';
 export class LazyLoadDirective implements OnInit, OnDestroy {
     private observer: IntersectionObserver | null = null;
 
-    constructor(private el: ElementRef) { }
+    constructor(private el: ElementRef, @Inject(PLATFORM_ID) private platformId: Object) { }
 
     ngOnInit(): void {
+        if (!isPlatformBrowser(this.platformId) || typeof IntersectionObserver === 'undefined') {
+            return;
+        }
+
         // Create Intersection Observer options
         const observerOptions: IntersectionObserverInit = {
             threshold: 0.1,

@@ -1,4 +1,5 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Product } from '../models/product.model';
 
 @Injectable({
@@ -10,11 +11,14 @@ export class WishlistService {
   items = this.itemsSignal.asReadonly();
   itemCount = computed(() => this.itemsSignal().length);
 
-  constructor() {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.loadFromStorage();
   }
 
   private loadFromStorage(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     const stored = localStorage.getItem('revcart_wishlist');
     if (stored) {
       try {
@@ -26,6 +30,7 @@ export class WishlistService {
   }
 
   private saveToStorage(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     localStorage.setItem('revcart_wishlist', JSON.stringify(this.itemsSignal()));
   }
 
@@ -49,6 +54,8 @@ export class WishlistService {
 
   clearWishlist(): void {
     this.itemsSignal.set([]);
-    localStorage.removeItem('revcart_wishlist');
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('revcart_wishlist');
+    }
   }
 }

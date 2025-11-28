@@ -1,7 +1,15 @@
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-8">My Orders</h1>
 
-    @if (orders().length === 0) {
+    @if (isLoading()) {
+    <div class="text-center py-12">
+        <p class="text-gray-600">Loading orders...</p>
+    </div>
+    } @else if (errorMessage()) {
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        {{ errorMessage() }}
+    </div>
+    } @else if (orders().length === 0) {
     <div class="text-center py-12">
         <lucide-icon [img]="Package" class="h-24 w-24 text-gray-300 mx-auto mb-4"></lucide-icon>
         <h2 class="text-2xl font-semibold mb-2">No orders yet</h2>
@@ -31,11 +39,15 @@
 
             <!-- Order Items -->
             <div class="space-y-3 mb-4">
-                @for (item of order.items; track item.id) {
-                <div class="flex justify-between text-sm">
-                    <span>{{ item.name }} × {{ item.quantity }}</span>
-                    <span class="font-medium">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
-                </div>
+                @if (order.items && order.items.length > 0) {
+                    @for (item of order.items; track item.id) {
+                        <div class="flex justify-between text-sm">
+                            <span>{{ item.name }} × {{ item.quantity }}</span>
+                            <span class="font-medium">₹{{ (item.price * item.quantity).toFixed(2) }}</span>
+                        </div>
+                    }
+                } @else {
+                    <p class="text-sm text-gray-500">No items found</p>
                 }
             </div>
 

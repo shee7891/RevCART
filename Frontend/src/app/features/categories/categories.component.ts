@@ -24,12 +24,23 @@ import { LucideAngularModule, ArrowRight } from 'lucide-angular';
               [queryParams]="{ category: category.id }"
               class="group relative overflow-hidden rounded-lg border bg-white hover:shadow-lg transition-shadow"
             >
-              <div class="aspect-square overflow-hidden">
-                <img
-                  [src]="category.image"
-                  [alt]="category.name"
-                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
+              <div class="aspect-square overflow-hidden bg-gray-100 relative">
+                @if (category.image) {
+                  <img
+                    [src]="category.image"
+                    [alt]="category.name"
+                    (load)="onImageLoad(category.id)"
+                    (error)="onImageError(category.id)"
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    [class.hidden]="!getImageLoaded(category.id)"
+                  />
+                }
+                <div
+                  class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 absolute inset-0"
+                  [class.hidden]="category.image && getImageLoaded(category.id)"
+                >
+                  <span class="text-6xl">{{ category.icon }}</span>
+                </div>
               </div>
               <div class="p-4">
                 <div class="flex items-center justify-between">
@@ -55,10 +66,23 @@ export class CategoriesComponent implements OnInit {
     readonly ArrowRight = ArrowRight;
 
     categories: Category[] = [];
+    imageLoadedMap = new Map<string, boolean>();
 
     ngOnInit(): void {
         this.productService.getCategories().subscribe(categories => {
             this.categories = categories;
         });
+    }
+
+    getImageLoaded(categoryId: string): boolean {
+        return this.imageLoadedMap.get(categoryId) || false;
+    }
+
+    onImageLoad(categoryId: string): void {
+        this.imageLoadedMap.set(categoryId, true);
+    }
+
+    onImageError(categoryId: string): void {
+        this.imageLoadedMap.set(categoryId, false);
     }
 }

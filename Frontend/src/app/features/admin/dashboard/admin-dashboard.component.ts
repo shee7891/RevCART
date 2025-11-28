@@ -1,9 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { OrderService } from '../../../core/services/order.service';
 import { ProductService } from '../../../core/services/product.service';
 import { Order } from '../../../core/models/order.model';
+import { environment } from '../../../../environments/environment';
 import { LucideAngularModule, Package, Users, DollarSign, TrendingUp } from 'lucide-angular';
 
 @Component({
@@ -55,13 +57,21 @@ import { LucideAngularModule, Package, Users, DollarSign, TrendingUp } from 'luc
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <button
             routerLink="/admin/products"
             class="p-6 bg-white border rounded-lg hover:shadow-md transition-shadow text-left"
           >
             <h3 class="font-semibold mb-2">Manage Products</h3>
             <p class="text-sm text-muted-foreground">Add, edit, or remove products</p>
+          </button>
+
+          <button
+            routerLink="/admin/categories"
+            class="p-6 bg-white border rounded-lg hover:shadow-md transition-shadow text-left"
+          >
+            <h3 class="font-semibold mb-2">Manage Categories</h3>
+            <p class="text-sm text-muted-foreground">Add, edit, or remove categories</p>
           </button>
 
           <button
@@ -116,7 +126,7 @@ import { LucideAngularModule, Package, Users, DollarSign, TrendingUp } from 'luc
                     <td class="py-3 px-4">\₹{{ order.total.toFixed(2) }}</td>
                     <td class="py-3 px-4">
                       <button
-                        [routerLink]="['/admin/orders', order.id]"
+                        routerLink="/admin/orders"
                         class="text-primary hover:underline"
                       >
                         View
@@ -133,6 +143,7 @@ import { LucideAngularModule, Package, Users, DollarSign, TrendingUp } from 'luc
   `
 })
 export class AdminDashboardComponent implements OnInit {
+    http = inject(HttpClient);
     orderService = inject(OrderService);
     productService = inject(ProductService);
 
@@ -146,7 +157,7 @@ export class AdminDashboardComponent implements OnInit {
         totalRevenue: 0,
         totalProducts: 0,
         inStock: 0,
-        activeUsers: 1234
+        activeUsers: 0
     };
 
     recentOrders: Order[] = [];
@@ -156,15 +167,57 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     loadDashboardData(): void {
-        this.orderService.getAllOrders().subscribe(orders => {
-            this.recentOrders = orders.slice(0, 10);
-            this.stats.totalOrders = orders.length;
-            this.stats.totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+        // Load statistics from admin endpoint
+        this.http.get<any>(`${environment.apiUrl}/admin/dashboard/stats`).subscribe({
+            next: (response) => {
+                if (response.success && response.data) {
+                    this.stats.totalOrders = response.data.totalOrders || 0;
+                    this.stats.totalRevenue = response.data.totalRevenue || 0;
+                    this.stats.totalProducts = response.data.totalProducts || 0;
+                    this.stats.activeUsers = response.data.activeUsers || 0;
+                }
+            },
+            error: (err) => {
+                console.error('Failed to load dashboard stats:', err);
+            }
         });
 
+        // Load recent orders from admin endpoint
+        const params = new HttpParams().set('page', 0).set('size', 10);
+        this.http.get<any>(`${environment.apiUrl}/admin/orders`, { params }).subscribe({
+            next: (response) => {
+                if (response.content) {
+                    this.recentOrders = response.content.map((order: any) => ({
+                        id: String(order.id),
+                        date: order.createdAt ? order.createdAt.split('T')[0] : '',
+                        status: this.mapStatus(order.status),
+                        items: order.items || [],
+                        total: order.totalAmount || 0,
+                        deliveryAddress: order.shippingAddress
+                            ? `${order.shippingAddress.line1}, ${order.shippingAddress.city}`
+                            : ''
+                    }));
+                }
+            },
+            error: (err) => {
+                console.error('Failed to load recent orders:', err);
+            }
+        });
+
+        // Load products for inStock count
         this.productService.getProducts().subscribe(products => {
-            this.stats.totalProducts = products.length;
             this.stats.inStock = products.filter(p => p.inStock).length;
         });
+    }
+
+    private mapStatus(backendStatus: string): Order['status'] {
+        const statusMap: { [key: string]: Order['status'] } = {
+            'PLACED': 'processing',
+            'PACKED': 'processing',
+            'OUT_FOR_DELIVERY': 'in_transit',
+            'DELIVERED': 'delivered',
+            'CANCELLED': 'cancelled'
+        };
+        return statusMap[backendStatus?.toUpperCase()] || 'processing';
     }
 }

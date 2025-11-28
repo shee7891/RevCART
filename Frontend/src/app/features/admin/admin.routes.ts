@@ -7,14 +7,18 @@ export const ADMIN_ROUTES: Routes = [
     },
     {
         path: 'products',
-        loadComponent: () => import('./dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./products/admin-products.component').then(m => m.AdminProductsComponent)
+    },
+    {
+        path: 'categories',
+        loadComponent: () => import('./categories/admin-categories.component').then(m => m.AdminCategoriesComponent)
     },
     {
         path: 'orders',
-        loadComponent: () => import('./dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./orders/admin-orders.component').then(m => m.AdminOrdersComponent)
     },
     {
         path: 'users',
-        loadComponent: () => import('./dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+        loadComponent: () => import('./users/admin-users.component').then(m => m.AdminUsersComponent)
     }
 ];

@@ -21,6 +21,10 @@ import { LucideAngularModule, Mail, Lock, ShoppingCart } from 'lucide-angular';
 
           <h2 class="text-2xl font-bold text-center mb-6">Welcome Back</h2>
 
+          <p class="text-center text-sm text-gray-600 mb-6">
+            Login to access your account. Your role (Customer/Admin/Delivery Agent) will be determined automatically.
+          </p>
+
           <!-- Error Message -->
           @if (errorMessage) {
             <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">

@@ -10,6 +10,10 @@ import { LucideAngularModule, Mail, Lock, User, Phone, ShoppingCart } from 'luci
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, LucideAngularModule],
   template: `
+  selector: 'app-signup',
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule, LucideAngularModule],
+  template: `
     <div class="min-h-screen bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center p-4">
       <div class="w-full max-w-md">
         <div class="bg-white rounded-lg shadow-xl p-8">
@@ -21,11 +25,9 @@ import { LucideAngularModule, Mail, Lock, User, Phone, ShoppingCart } from 'luci
 
           <h2 class="text-2xl font-bold text-center mb-6">Create Account</h2>
 
-          @if (errorMessage) {
-            <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-              {{ errorMessage }}
-            </div>
-          }
+          <div *ngIf="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
+            {{ errorMessage }}
+          </div>
 
           <form (ngSubmit)="onSignup()" class="space-y-4">
             <div>
@@ -102,6 +104,19 @@ import { LucideAngularModule, Mail, Lock, User, Phone, ShoppingCart } from 'luci
               </div>
             </div>
 
+            <div>
+              <label class="block text-sm font-medium mb-1">Register As</label>
+              <div class="grid grid-cols-1 gap-2">
+                <div *ngFor="let roleOption of roles" class="flex items-center p-3 border rounded-md cursor-pointer hover:bg-gray-50 transition-colors" [ngClass]="{'border-primary': role === roleOption.value, 'bg-primary/5': role === roleOption.value}">
+                  <input type="radio" [(ngModel)]="role" [value]="roleOption.value" name="role" [id]="'role-' + roleOption.value" class="mr-3" />
+                  <label [for]="'role-' + roleOption.value" class="flex-1 cursor-pointer">
+                    <div class="font-medium text-sm">{{ roleOption.label }}</div>
+                    <div class="text-xs text-gray-500">{{ roleOption.description }}</div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               [disabled]="isLoading"
@@ -126,13 +141,13 @@ export class SignupComponent {
   authService = inject(AuthService);
   router = inject(Router);
 
-  name = '';
-  email = '';
-  phone = '';
-  password = '';
-  confirmPassword = '';
-  isLoading = false;
-  errorMessage = '';
+    name = '';
+    email = '';
+    phone = '';
+    password = '';
+    confirmPassword = '';
+    isLoading = false;
+    errorMessage = '';
 
   // Icons
   readonly ShoppingCart = ShoppingCart;
@@ -160,26 +175,20 @@ export class SignupComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.signup({
-      name: this.name,
-      email: this.email,
-      password: this.password,
-      phone: this.phone
-    }).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.router.navigate(['/']);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        if (err.status === 0) {
-          this.errorMessage = 'Unable to connect to server. Is the backend running on port 8080?';
-        } else if (err.status === 400) {
-          this.errorMessage = err.error?.error || 'Failed to create account';
-        } else {
-          this.errorMessage = 'Failed to create account. Please try again.';
-        }
-      }
-    });
-  }
+        this.authService.signup({
+            name: this.name,
+            email: this.email,
+            password: this.password,
+            phone: this.phone
+        }).subscribe({
+            next: () => {
+                this.isLoading = false;
+                this.router.navigate(['/']);
+            },
+            error: (err) => {
+                this.isLoading = false;
+                this.errorMessage = 'Failed to create account';
+            }
+        });
+    }
 }

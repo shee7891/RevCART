@@ -10,10 +10,6 @@ import { LucideAngularModule, Mail, Lock, User, Phone, ShoppingCart } from 'luci
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, LucideAngularModule],
   template: `
-  selector: 'app-signup',
-  standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, LucideAngularModule],
-  template: `
     <div class="min-h-screen bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center p-4">
       <div class="w-full max-w-md">
         <div class="bg-white rounded-lg shadow-xl p-8">
@@ -141,13 +137,20 @@ export class SignupComponent {
   authService = inject(AuthService);
   router = inject(Router);
 
-    name = '';
-    email = '';
-    phone = '';
-    password = '';
-    confirmPassword = '';
-    isLoading = false;
-    errorMessage = '';
+  name = '';
+  email = '';
+  phone = '';
+  password = '';
+  confirmPassword = '';
+  role: 'CUSTOMER' | 'ADMIN' | 'DELIVERY_AGENT' = 'CUSTOMER';
+  isLoading = false;
+  errorMessage = '';
+
+  roles = [
+    { value: 'CUSTOMER', label: 'Customer', description: 'Shop for groceries and place orders' },
+    { value: 'ADMIN', label: 'Admin', description: 'Manage products, orders, and users' },
+    { value: 'DELIVERY_AGENT', label: 'Delivery Agent', description: 'Manage and deliver orders' }
+  ];
 
   // Icons
   readonly ShoppingCart = ShoppingCart;
@@ -175,20 +178,22 @@ export class SignupComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-        this.authService.signup({
-            name: this.name,
-            email: this.email,
-            password: this.password,
-            phone: this.phone
-        }).subscribe({
-            next: () => {
-                this.isLoading = false;
-                this.router.navigate(['/']);
-            },
-            error: (err) => {
-                this.isLoading = false;
-                this.errorMessage = 'Failed to create account';
-            }
-        });
-    }
+    this.authService.signup({
+      name: this.name,
+      email: this.email,
+      password: this.password,
+      phone: this.phone,
+      role: this.role
+    }).subscribe({
+      next: () => {
+        this.isLoading = false;
+        // Redirect to OTP verification page
+        this.router.navigate(['/auth/verify-otp'], { queryParams: { email: this.email } });
+      },
+      error: (err: any) => {
+        this.isLoading = false;
+        this.errorMessage = err.error?.message || 'Failed to create account. Please try again.';
+      }
+    });
+  }
 }

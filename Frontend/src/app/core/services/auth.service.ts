@@ -2,9 +2,23 @@ import { Injectable, signal, computed, Inject, PLATFORM_ID } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, delay, tap, map } from 'rxjs';
+import { Observable, of, delay, tap, map, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User, LoginCredentials, SignupData } from '../models/user.model';
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface BackendAuthResponse {
+  token: string;
+  userId: number;
+  email: string;
+  name: string;
+  role: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -50,39 +64,62 @@ export class AuthService {
   }
 
   login(credentials: LoginCredentials): Observable<User> {
-    const mockUser: User = {
-      id: '1',
-      email: credentials.email,
-      name: credentials.email.split('@')[0],
-      role: credentials.email.includes('admin') ? 'admin' :
-            credentials.email.includes('delivery') ? 'delivery_agent' : 'customer'
-    };
+    return this.httpClient.post<ApiResponse<BackendAuthResponse>>(`${this.apiUrl}/login`, credentials).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.message || 'Login failed');
+        }
 
-    this.userSignal.set(mockUser);
+        const authData = response.data;
+        const user: User = {
+          id: String(authData.userId),
+          email: authData.email,
+          name: authData.name,
+          role: this.mapRole(authData.role)
+        };
 
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('revcart_user', JSON.stringify(mockUser));
-    }
+        this.userSignal.set(user);
 
-    return of(mockUser).pipe(delay(500));
+        if (isPlatformBrowser(this.platformId)) {
+          localStorage.setItem('revcart_user', JSON.stringify(user));
+          localStorage.setItem('revcart_token', authData.token);
+        }
+
+        return user;
+      }),
+      catchError(error => {
+        return throwError(() => error);
+      })
+    );
   }
 
   signup(data: SignupData): Observable<User> {
-    const newUser: User = {
-      id: Date.now().toString(),
+    return this.httpClient.post<ApiResponse<string>>(`${this.apiUrl}/register`, {
       email: data.email,
-      name: data.name,
-      phone: data.phone,
-      role: 'customer'
-    };
-
-    this.userSignal.set(newUser);
-
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('revcart_user', JSON.stringify(newUser));
-    }
-
-    return of(newUser).pipe(delay(500));
+      password: data.password,
+      fullName: data.name,
+      phone: data.phone || '',
+      role: data.role || 'CUSTOMER'
+    }).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.message || 'Registration failed');
+        }
+        // Registration successful, but user needs to verify OTP
+        // Return a temporary user object
+        const tempUser: User = {
+          id: 'temp',
+          email: data.email,
+          name: data.name,
+          phone: data.phone,
+          role: 'customer'
+        };
+        return tempUser;
+      }),
+      catchError(error => {
+        return throwError(() => error);
+      })
+    );
   }
 
   logout(): void {
@@ -98,6 +135,46 @@ export class AuthService {
 
   hasRole(role: string): boolean {
     return this.userSignal()?.role === role;
+  }
+
+  verifyOtp(email: string, otp: string): Observable<void> {
+    return this.httpClient.post<ApiResponse<string>>(`${this.apiUrl}/verify-otp`, {
+      email,
+      otp
+    }).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.message || 'OTP verification failed');
+        }
+      }),
+      catchError(error => {
+        return throwError(() => error);
+      })
+    );
+  }
+
+  resendOtp(email: string): Observable<void> {
+    return this.httpClient.post<ApiResponse<string>>(`${this.apiUrl}/resend-otp`, null, {
+      params: { email }
+    }).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.message || 'Failed to resend OTP');
+        }
+      }),
+      catchError(error => {
+        return throwError(() => error);
+      })
+    );
+  }
+
+  private mapRole(backendRole: string): 'customer' | 'admin' | 'delivery_agent' {
+    const roleMap: { [key: string]: 'customer' | 'admin' | 'delivery_agent' } = {
+      'CUSTOMER': 'customer',
+      'ADMIN': 'admin',
+      'DELIVERY_AGENT': 'delivery_agent'
+    };
+    return roleMap[backendRole.toUpperCase()] || 'customer';
   }
 }
 

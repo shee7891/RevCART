@@ -21,7 +21,10 @@ export class CartService {
     this.itemsSignal().reduce((sum, item) => sum + item.quantity, 0)
   );
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private httpClient: HttpClient
+  ) {
     this.loadCartFromStorage();
   }
 
@@ -103,6 +106,22 @@ export class CartService {
     this.itemsSignal.set([]);
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('revcart_cart');
+    }
+    this.syncWithServer();
+  }
+
+  private syncWithServer(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const token = localStorage.getItem('revcart_token');
+    if (!token) return; // User not authenticated, skip sync
+
+    // Sync cart with backend (optional - can be implemented later)
+    // For now, this is a placeholder
+    try {
+      // this.httpClient.post(`${this.apiUrl}/sync`, this.itemsSignal()).subscribe();
+    } catch (error) {
+      console.warn('Cart sync failed:', error);
     }
   }
 }

@@ -128,7 +128,7 @@ export class VerifyOtpComponent {
         this.successMessage = 'Email verified successfully. You can now log in.';
         setTimeout(() => this.router.navigate(['/auth/login']), 1500);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isLoading = false;
         if (err.status === 400) {
           this.errorMessage = err.error?.message || 'Invalid OTP. Please try again.';

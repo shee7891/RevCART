@@ -167,7 +167,19 @@ export class ProductService {
   }
 
   getNewArrivals(limit?: number): Observable<Product[]> {
-    const newProducts = [...MOCK_PRODUCTS].reverse();
-    return of(limit ? newProducts.slice(0, limit) : newProducts);
+    // Use getProducts and sort by newest (backend returns products sorted by creation date)
+    return this.getProducts().pipe(
+      map(products => {
+        // Products are already sorted by creation date from backend
+        const newProducts = products.slice(0, limit || products.length);
+        return newProducts;
+      }),
+      catchError((error) => {
+        console.warn('Backend new arrivals unavailable, using mock:', error);
+        // Fallback to mock data if backend fails
+        const newProducts = [...MOCK_PRODUCTS].reverse();
+        return of(limit ? newProducts.slice(0, limit) : newProducts);
+      })
+    );
   }
 }

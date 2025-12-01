@@ -4,15 +4,13 @@ import com.revcart.dto.PaymentDto;
 import com.revcart.dto.request.PaymentCaptureRequest;
 import com.revcart.entity.Order;
 import com.revcart.entity.Payment;
-import com.revcart.enums.PaymentMethod;
 import com.revcart.enums.PaymentStatus;
 import com.revcart.exception.BadRequestException;
 import com.revcart.exception.ResourceNotFoundException;
-import com.revcart.mapper.OrderMapper;
 import com.revcart.repository.OrderRepository;
 import com.revcart.repository.PaymentRepository;
+import com.revcart.service.NotificationService;
 import com.revcart.service.PaymentService;
-import java.math.BigDecimal;
 import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +21,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+    private final NotificationService notificationService;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, OrderRepository orderRepository) {
+    public PaymentServiceImpl(
+            PaymentRepository paymentRepository,
+            OrderRepository orderRepository,
+            NotificationService notificationService) {
         this.paymentRepository = paymentRepository;
         this.orderRepository = orderRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -57,7 +60,14 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setPaidAt(Instant.now());
         order.setPaymentStatus(PaymentStatus.SUCCESS);
         orderRepository.save(order);
-        return map(paymentRepository.save(payment));
+        PaymentDto paymentDto = map(paymentRepository.save(payment));
+
+        // Send payment confirmation notification
+        notificationService.pushPaymentConfirmation(
+                order.getUser().getId(),
+                "Payment of ₹" + payment.getAmount() + " confirmed for order #" + order.getId());
+
+        return paymentDto;
     }
 
     @Override

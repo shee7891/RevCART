@@ -37,7 +37,23 @@ public class NotificationServiceImpl implements NotificationService {
         doc.setMessage(message);
         doc.setType(NotificationType.ORDER_STATUS);
         NotificationDocument saved = notificationRepository.save(doc);
-        messagingTemplate.convertAndSend("/topic/orders/" + userId, NotificationMapper.toDto(saved));
+        String topic = "/topic/orders/" + userId;
+        System.out.println("📤 Sending notification to topic: " + topic + ", message: " + message);
+        messagingTemplate.convertAndSend(topic, NotificationMapper.toDto(saved));
+        System.out.println("✅ Notification sent successfully");
+    }
+
+    @Override
+    public void pushPaymentConfirmation(Long userId, String message) {
+        NotificationDocument doc = new NotificationDocument();
+        doc.setUserId(userId);
+        doc.setMessage(message);
+        doc.setType(NotificationType.PAYMENT);
+        NotificationDocument saved = notificationRepository.save(doc);
+        String topic = "/topic/orders/" + userId;
+        System.out.println("📤 Sending payment notification to topic: " + topic + ", message: " + message);
+        messagingTemplate.convertAndSend(topic, NotificationMapper.toDto(saved));
+        System.out.println("✅ Payment notification sent successfully");
     }
 
     @Override

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./Frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - revcart-network
+
+  backend:
+    build: ./Backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revcart
+      - SPRING_DATASOURCE_USERNAME=revcart_user
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - mysql
+    networks:
+      - revcart-network
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: revcart
+      MYSQL_USER: revcart_user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./RevCart.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - revcart-network
+
+volumes:
+  mysql_data:
+
+networks:
+  revcart-network:
+    driver: bridge

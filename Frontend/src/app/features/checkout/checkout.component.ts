@@ -10,25 +10,25 @@ import { environment } from '../../../environments/environment';
 import { LucideAngularModule, CreditCard, MapPin } from 'lucide-angular';
 
 interface AddressDto {
-  id?: number;
-  line1: string;
-  line2?: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  primaryAddress: boolean;
+    id?: number;
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    primaryAddress: boolean;
 }
 
 interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
+    success: boolean;
+    message: string;
+    data: T;
 }
 
 interface CheckoutRequest {
-  addressId: number;
-  paymentMethod?: string;
+    addressId: number;
+    paymentMethod?: string;
 }
 
 @Component({
@@ -328,6 +328,8 @@ export class CheckoutComponent implements OnInit {
                         const errorMsg = err.error?.message || 'Failed to place order';
                         if (errorMsg.includes('Cart empty') || errorMsg.includes('Cart not found')) {
                             this.errorMessage.set('Your cart is empty. Please add items to your cart before checkout.');
+                        } else if (errorMsg.includes('Insufficient stock')) {
+                            this.errorMessage.set('One or more items in your cart are no longer available. Please go back to cart and update quantities.');
                         } else {
                             this.errorMessage.set(errorMsg);
                         }

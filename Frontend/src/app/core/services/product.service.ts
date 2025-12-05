@@ -120,7 +120,8 @@ export class ProductService {
       rating: 0, // Backend doesn't provide rating, set default
       reviews: 0, // Backend doesn't provide reviews, set default
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
-      discount: backendProduct.discount ? Number(backendProduct.discount) : undefined
+      discount: backendProduct.discount ? Number(backendProduct.discount) : undefined,
+      availableQuantity: backendProduct.availableQuantity || 0
     };
   };
 

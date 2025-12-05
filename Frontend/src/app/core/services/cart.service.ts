@@ -67,7 +67,8 @@ export class CartService {
         price: product.price,
         quantity,
         image: product.image,
-        unit: product.unit
+        unit: product.unit,
+        availableQuantity: product.availableQuantity
       };
 
       return [...items, newItem];
@@ -108,6 +109,20 @@ export class CartService {
       localStorage.removeItem('revcart_cart');
     }
     this.syncWithServer();
+  }
+
+  /**
+   * Update available quantity for cart items based on fresh stock data from server
+   * This is called after refreshing stock to ensure cart shows latest inventory
+   */
+  updateItemsStock(stockMap: Map<string, number>): void {
+    this.itemsSignal.update(items =>
+      items.map(item => ({
+        ...item,
+        availableQuantity: stockMap.get(item.id) ?? item.availableQuantity
+      }))
+    );
+    this.saveCartToStorage();
   }
 
   private syncWithServer(): void {

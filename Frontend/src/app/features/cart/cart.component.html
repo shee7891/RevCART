@@ -2,102 +2,137 @@
   <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
 
   @if (cartService.items().length === 0) {
-    <div class="text-center py-12">
-      <div class="flex justify-center mb-4">
-        <lucide-icon [img]="ShoppingBag" class="h-24 w-24 text-gray-300"></lucide-icon>
-      </div>
-      <h2 class="text-2xl font-semibold mb-2">Your cart is empty</h2>
-      <p class="text-gray-600 mb-6">Add some products to get started</p>
-      <a
-        routerLink="/products"
-        class="inline-block px-6 py-3 bg-primary text-white rounded-md hover:bg-primary/90"
-      >
-        Start Shopping
-      </a>
+  <div class="text-center py-12">
+    <div class="flex justify-center mb-4">
+      <lucide-icon [img]="ShoppingBag" class="h-24 w-24 text-gray-300"></lucide-icon>
     </div>
+    <h2 class="text-2xl font-semibold mb-2">Your cart is empty</h2>
+    <p class="text-gray-600 mb-6">Add some products to get started</p>
+    <a routerLink="/products" class="inline-block px-6 py-3 bg-primary text-white rounded-md hover:bg-primary/90">
+      Start Shopping
+    </a>
+  </div>
   } @else {
-    <div class="grid lg:grid-cols-3 gap-8">
-      <!-- Cart Items -->
-      <div class="lg:col-span-2 space-y-4">
-        @for (item of cartService.items(); track item.id) {
-          <div class="flex gap-4 p-4 bg-white rounded-lg border">
-            <!-- Product Image -->
-            <img
-              [src]="item.image"
-              [alt]="item.name"
-              class="w-24 h-24 object-cover rounded-md"
-            />
-
-            <!-- Product Details -->
-            <div class="flex-1">
-              <h3 class="font-semibold mb-1">{{ item.name }}</h3>
-              <p class="text-sm text-gray-600 mb-2">{{ item.unit }}</p>
-              <p class="text-lg font-bold text-primary">
-                ₹{{ item.price.toFixed(2) }}
-              </p>
-            </div>
-
-            <!-- Quantity Controls -->
-            <div class="flex flex-col items-end justify-between">
-              <button
-                (click)="removeItem(item.id)"
-                class="p-2 hover:bg-gray-100 rounded-md text-red-500"
-              >
-                <lucide-icon [img]="Trash2" class="h-4 w-4"></lucide-icon>
-              </button>
-
-              <div class="flex items-center border rounded-md">
-                <button
-                  (click)="decreaseQuantity(item.id, item.quantity)"
-                  class="px-3 py-1 hover:bg-gray-100"
-                >
-                  <lucide-icon [img]="Minus" class="h-4 w-4"></lucide-icon>
-                </button>
-                <span class="px-4 py-1 border-x">{{ item.quantity }}</span>
-                <button
-                  (click)="increaseQuantity(item.id, item.quantity)"
-                  class="px-3 py-1 hover:bg-gray-100"
-                >
-                  <lucide-icon [img]="Plus" class="h-4 w-4"></lucide-icon>
-                </button>
-              </div>
-
-              <p class="text-sm font-medium">
-                Total: ₹{{ (item.price * item.quantity).toFixed(2) }}
-              </p>
-            </div>
+  <div class="grid lg:grid-cols-3 gap-8">
+    <!-- Cart Items -->
+    <div class="lg:col-span-2 space-y-4">
+      <!-- Stock Validation Error Alert -->
+      @if (stockValidationError()) {
+      <div class="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+        <lucide-icon [img]="AlertCircle" class="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5"></lucide-icon>
+        <div class="flex-1">
+          <h3 class="font-semibold text-red-800 mb-2">{{ stockValidationError() }}</h3>
+          <div class="space-y-1 text-sm text-red-700">
+            @for (item of insufficientStockItems(); track item.productId) {
+            <p>
+              <strong>{{ item.productName }}</strong>: You requested {{ item.requestedQuantity }} but only
+              {{ item.availableQuantity }} available. Please update quantity.
+            </p>
+            }
           </div>
-        }
-      </div>
-
-      <!-- Order Summary -->
-      <div class="lg:col-span-1">
-        <div class="bg-white rounded-lg border p-6 sticky top-4">
-          <h2 class="text-xl font-bold mb-4">Order Summary</h2>
-
-          <div class="space-y-3 mb-4">
-            <div class="flex justify-between">
-              <span class="text-gray-600">Subtotal</span>
-              <span class="font-medium">₹{{ cartService.total().toFixed(2) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-gray-600">Delivery Fee</span>
-              <span class="font-medium">₹{{ deliveryFee.toFixed(2) }}</span>
-            </div>
-            <div class="border-t pt-3 flex justify-between text-lg font-bold">
-              <span>Total</span>
-              <span class="text-primary">₹{{ grandTotal.toFixed(2) }}</span>
-            </div>
-          </div>
-
-          <a
-            routerLink="/checkout"
-            class="block w-full px-6 py-3 bg-primary text-white text-center rounded-md hover:bg-primary/90"
-          >
-            Proceed to Checkout
-          </a>
         </div>
       </div>
+      }
+
+      @for (item of cartService.items(); track item.id) {
+      <div [class.border-red-300]="hasInsufficientStock(item.id)" class="flex gap-4 p-4 bg-white rounded-lg border">
+        <!-- Product Image -->
+        <img [src]="item.image" [alt]="item.name" class="w-24 h-24 object-cover rounded-md" />
+
+        <!-- Product Details -->
+        <div class="flex-1">
+          <h3 class="font-semibold mb-1">{{ item.name }}</h3>
+          <p class="text-sm text-gray-600 mb-2">{{ item.unit }}</p>
+          <p class="text-lg font-bold text-primary">
+            ₹{{ item.price.toFixed(2) }}
+          </p>
+
+          <!-- Stock Status Indicator -->
+          @if (hasInsufficientStock(item.id)) {
+          <p class="text-sm text-red-600 font-medium mt-2">
+            ⚠️ Only {{ getAvailableQuantity(item.id) }} in stock. Please reduce quantity.
+          </p>
+          } @else if (getAvailableQuantity(item.id) > 0 && getAvailableQuantity(item.id) <= 5) { <p
+            class="text-sm text-orange-600 font-medium mt-2">
+            ⏱️ Only {{ getAvailableQuantity(item.id) }} left in stock
+            </p>
+            } @else if (getAvailableQuantity(item.id) > 0) {
+            <p class="text-sm text-green-600 font-medium mt-2">
+              ✓ In stock ({{ getAvailableQuantity(item.id) }} available)
+            </p>
+            } @else {
+            <p class="text-sm text-red-600 font-medium mt-2">
+              ✗ Out of stock
+            </p>
+            }
+        </div>
+
+        <!-- Quantity Controls -->
+        <div class="flex flex-col items-end justify-between">
+          <button (click)="removeItem(item.id)" class="p-2 hover:bg-gray-100 rounded-md text-red-500">
+            <lucide-icon [img]="Trash2" class="h-4 w-4"></lucide-icon>
+          </button>
+
+          <div class="flex items-center border rounded-md">
+            <button (click)="decreaseQuantity(item.id, item.quantity)" class="px-3 py-1 hover:bg-gray-100">
+              <lucide-icon [img]="Minus" class="h-4 w-4"></lucide-icon>
+            </button>
+            <span class="px-4 py-1 border-x">{{ item.quantity }}</span>
+            <button (click)="increaseQuantity(item.id, item.quantity)"
+              [disabled]="item.quantity >= (getAvailableQuantity(item.id) || 0)"
+              [class.opacity-50]="item.quantity >= (getAvailableQuantity(item.id) || 0)"
+              [class.cursor-not-allowed]="item.quantity >= (getAvailableQuantity(item.id) || 0)"
+              class="px-3 py-1 hover:bg-gray-100">
+              <lucide-icon [img]="Plus" class="h-4 w-4"></lucide-icon>
+            </button>
+          </div>
+
+          <p class="text-sm font-medium">
+            Total: ₹{{ (item.price * item.quantity).toFixed(2) }}
+          </p>
+        </div>
+      </div>
+      }
     </div>
+
+    <!-- Order Summary -->
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-lg border p-6 sticky top-4">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Order Summary</h2>
+          <button (click)="refreshStockData()" [disabled]="isRefreshingStock()" [class.opacity-50]="isRefreshingStock()"
+            class="p-2 hover:bg-gray-100 rounded-md disabled:opacity-50 transition-transform"
+            [class.animate-spin]="isRefreshingStock()" title="Refresh stock availability">
+            <lucide-icon [img]="RefreshCw" class="h-4 w-4"></lucide-icon>
+          </button>
+        </div>
+
+        <div class="space-y-3 mb-4">
+          <div class="flex justify-between">
+            <span class="text-gray-600">Subtotal</span>
+            <span class="font-medium">₹{{ cartService.total().toFixed(2) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Delivery Fee</span>
+            <span class="font-medium">₹{{ deliveryFee.toFixed(2) }}</span>
+          </div>
+          <div class="border-t pt-3 flex justify-between text-lg font-bold">
+            <span>Total</span>
+            <span class="text-primary">₹{{ grandTotal.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <button (click)="proceedToCheckout()"
+          [disabled]="isValidatingStock() || cartService.items().length === 0 || hasAnyInsufficientStock()"
+          [class.opacity-50]="isValidatingStock() || hasAnyInsufficientStock()"
+          [class.cursor-not-allowed]="isValidatingStock() || hasAnyInsufficientStock()"
+          class="w-full px-6 py-3 bg-primary text-white text-center rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          [title]="hasAnyInsufficientStock() ? 'Please fix items with insufficient stock before checkout' : ''">
+          {{ isValidatingStock() ? 'Validating Stock...' : hasAnyInsufficientStock() ? 'Fix Stock Issues to Proceed' :
+          'Proceed to Checkout' }}
+        </button>
+      </div>
+    </div>
+  </div>
   }
 </div>

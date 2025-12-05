@@ -292,8 +292,8 @@ export class AdminProductsComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.products = response.content.map((p: any) => {
-            // Get stock from inventory if available
-            const quantity = p.inventory?.quantity || 0;
+            // Get stock from availableQuantity field in the response (ProductDto returns this)
+            const quantity = p.availableQuantity || 0;
             const isActive = p.active !== false;
             // Stock status should be dynamic based on quantity and active status
             const inStock = isActive && quantity > 0;
@@ -302,8 +302,8 @@ export class AdminProductsComponent implements OnInit {
               id: p.id.toString(),
               name: p.name,
               price: p.price,
-              category: p.category?.name || 'Uncategorized',
-              categoryId: p.category?.id?.toString() || '',
+              category: p.categoryName || 'Uncategorized',
+              categoryId: p.categoryId ? p.categoryId.toString() : '',
               image: p.imageUrl || '',
               description: p.description || '',
               unit: p.unit || 'each',
@@ -318,8 +318,6 @@ export class AdminProductsComponent implements OnInit {
           this.products.forEach(p => {
             this.stockMap.set(p.id, (p as any).quantity || 0);
           });
-          // Still load individual stock for accuracy
-          this.loadStock();
         },
         error: () => {
           this.productService.getProducts().subscribe(products => {
@@ -339,21 +337,8 @@ export class AdminProductsComponent implements OnInit {
   }
 
   loadStock(): void {
-    // Load stock more efficiently - batch request or include in product list
-    this.products.forEach(p => {
-      this.http.get<any>(`${environment.apiUrl}/products/${p.id}`).subscribe({
-        next: (prod) => {
-          // Get quantity from inventory if available
-          const quantity = prod.inventory?.quantity || prod.quantity || 0;
-          this.stockMap.set(p.id, quantity);
-        },
-        error: () => {
-          // If product fetch fails, try to get from the product data itself
-          const quantity = (p as any).quantity || 0;
-          this.stockMap.set(p.id, quantity);
-        }
-      });
-    });
+    // Stock is now loaded directly from the product list via availableQuantity field
+    // This method is kept for backward compatibility but no longer needed
   }
 
   getStock(id: string): number {

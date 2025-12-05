@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
-import { LucideAngularModule, User, MapPin, Shield, Plus, Edit, Trash2, X, Save } from 'lucide-angular';
+import { LucideAngularModule, User, MapPin, Plus, Edit, Trash2, X, Save } from 'lucide-angular';
 
 interface Address {
     id?: number;
@@ -45,7 +45,6 @@ export class ProfileComponent implements OnInit {
     // Icons
     readonly User = User;
     readonly MapPin = MapPin;
-    readonly Shield = Shield;
     readonly Plus = Plus;
     readonly Edit = Edit;
     readonly Trash2 = Trash2;
@@ -57,12 +56,6 @@ export class ProfileComponent implements OnInit {
         fullName: '',
         email: '',
         phone: ''
-    });
-
-    passwordData = signal({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
     });
 
     addresses = signal<Address[]>([]);
@@ -82,7 +75,7 @@ export class ProfileComponent implements OnInit {
     errorMessage = signal('');
     successMessage = signal('');
 
-    activeTab = signal<'profile' | 'addresses' | 'security'>('profile');
+    activeTab = signal<'profile' | 'addresses'>('profile');
 
     ngOnInit(): void {
         if (!this.authService.isAuthenticated()) {
@@ -235,45 +228,6 @@ export class ProfileComponent implements OnInit {
             error: (err) => {
                 this.errorMessage.set(err.error?.message || 'Failed to delete address');
                 console.error('Failed to delete address:', err);
-            }
-        });
-    }
-
-    changePassword(): void {
-        if (this.passwordData().newPassword !== this.passwordData().confirmPassword) {
-            this.errorMessage.set('Passwords do not match');
-            return;
-        }
-
-        if (this.passwordData().newPassword.length < 6) {
-            this.errorMessage.set('Password must be at least 6 characters long');
-            return;
-        }
-
-        this.isLoading.set(true);
-        this.errorMessage.set('');
-        this.successMessage.set('');
-
-        const payload = {
-            currentPassword: this.passwordData().currentPassword,
-            newPassword: this.passwordData().newPassword
-        };
-
-        this.http.post<ApiResponse<void>>(`${environment.apiUrl}/profile/change-password`, payload).subscribe({
-            next: () => {
-                this.isLoading.set(false);
-                this.successMessage.set('Password changed successfully');
-                this.passwordData.set({
-                    currentPassword: '',
-                    newPassword: '',
-                    confirmPassword: ''
-                });
-                setTimeout(() => this.successMessage.set(''), 3000);
-            },
-            error: (err) => {
-                this.isLoading.set(false);
-                this.errorMessage.set(err.error?.message || 'Failed to change password');
-                console.error('Failed to change password:', err);
             }
         });
     }

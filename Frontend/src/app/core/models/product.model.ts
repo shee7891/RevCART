@@ -12,6 +12,7 @@ export interface Product {
   reviews: number;
   originalPrice?: number;
   discount?: number;
+  availableQuantity?: number;
 }
 
 export interface Category {

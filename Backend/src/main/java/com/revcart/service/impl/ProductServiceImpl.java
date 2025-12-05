@@ -15,6 +15,8 @@ import com.revcart.service.ProductService;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,8 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional
 public class ProductServiceImpl implements ProductService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductServiceImpl.class);
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
@@ -47,19 +51,33 @@ public class ProductServiceImpl implements ProductService {
         mapProduct(product, request, category);
         Product saved = productRepository.save(product);
         createOrUpdateInventory(saved, request.getQuantity());
+        // Refresh the product to ensure the inventory relationship is loaded
+        saved = productRepository.findById(saved.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found after save"));
+        logger.info("Product created successfully. ID: {}, Stock: {}", saved.getId(),
+                saved.getInventory() != null ? saved.getInventory().getAvailableQuantity() : 0);
         return ProductMapper.toDto(saved);
     }
 
     @Override
     @CacheEvict(value = "products", allEntries = true)
     public ProductDto update(Long id, ProductRequest request) {
+        logger.info("Updating product with ID: {}", id);
+        logger.debug("Update request - Name: {}, Price: {}, Quantity: {}", request.getName(), request.getPrice(),
+                request.getQuantity());
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
         mapProduct(product, request, category);
         createOrUpdateInventory(product, request.getQuantity());
-        return ProductMapper.toDto(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        // Refresh the product to ensure the inventory relationship is loaded
+        saved = productRepository.findById(saved.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found after save"));
+        logger.info("Product updated successfully. ID: {}, Stock: {}", saved.getId(),
+                saved.getInventory() != null ? saved.getInventory().getAvailableQuantity() : 0);
+        return ProductMapper.toDto(saved);
     }
 
     @Override
@@ -110,13 +128,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void createOrUpdateInventory(Product product, Integer quantity) {
+        logger.debug("Creating or updating inventory for product ID: {} with quantity: {}", product.getId(), quantity);
         Inventory inventory = inventoryRepository.findByProduct(product).orElseGet(() -> {
+            logger.debug("Creating new inventory record for product ID: {}", product.getId());
             Inventory inv = new Inventory();
             inv.setProduct(product);
             return inv;
         });
+        logger.debug("Setting availableQuantity to: {} for product ID: {}", quantity != null ? quantity : 0,
+                product.getId());
         inventory.setAvailableQuantity(quantity != null ? quantity : 0);
-        inventoryRepository.save(inventory);
+        Inventory saved = inventoryRepository.save(inventory);
+        logger.debug("Inventory saved successfully. Inventory ID: {}, availableQuantity: {}", saved.getId(),
+                saved.getAvailableQuantity());
     }
 }
-

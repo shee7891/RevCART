@@ -38,6 +38,9 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -48,6 +51,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class OrderServiceImpl implements OrderService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
 
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
@@ -84,8 +89,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true)
     public OrderDto checkout(CheckoutRequest request) {
+        logger.info("Starting checkout process");
         User user = getCurrentUser();
+        logger.debug("Checkout for user ID: {}", user.getId());
         Address address = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
         Cart cart = cartRepository.findByUser(user)
@@ -93,6 +101,7 @@ public class OrderServiceImpl implements OrderService {
         if (cart.getItems().isEmpty()) {
             throw new BadRequestException("Cart empty");
         }
+        logger.debug("Cart has {} items", cart.getItems().size());
         Order order = new Order();
         order.setUser(user);
         order.setShippingAddress(address);
@@ -100,6 +109,8 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentStatus(PaymentStatus.PENDING);
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getItems()) {
+            logger.debug("Processing cart item - Product ID: {}, Quantity: {}", cartItem.getProduct().getId(),
+                    cartItem.getQuantity());
             OrderItem item = new OrderItem();
             item.setOrder(order);
             item.setProduct(cartItem.getProduct());
@@ -109,14 +120,20 @@ public class OrderServiceImpl implements OrderService {
             order.getItems().add(item);
             total = total.add(item.getSubtotal());
             reserveInventory(cartItem.getProduct(), cartItem.getQuantity());
+            logger.debug("Successfully reserved inventory for product ID: {}", cartItem.getProduct().getId());
         }
+        logger.info("All inventory reservations completed");
         order.setTotalAmount(total);
         Order saved = orderRepository.save(order);
+        logger.info("Order created successfully with ID: {}", saved.getId());
         createTrackingLog(saved, OrderStatus.PLACED, "Order placed");
         cart.getItems().clear();
         cartRepository.save(cart);
+        logger.debug("Cart cleared and saved");
         paymentService.initiatePayment(saved.getId());
+        logger.debug("Payment initiated for order ID: {}", saved.getId());
         notificationService.pushOrderUpdate(user.getId(), "Order #" + saved.getId() + " placed successfully");
+        logger.info("Checkout completed successfully for order ID: {}", saved.getId());
         return OrderMapper.toDto(saved);
     }
 
@@ -233,8 +250,7 @@ public class OrderServiceImpl implements OrderService {
                 "assigned", assigned,
                 "inTransit", inTransit,
                 "deliveredToday", deliveredToday,
-                "pending", pending
-        );
+                "pending", pending);
     }
 
     @Override
@@ -261,13 +277,33 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void reserveInventory(Product product, Integer qty) {
-        Inventory inventory = inventoryRepository.findByProduct(product)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory missing"));
-        if (inventory.getAvailableQuantity() < qty) {
+        logger.debug("Attempting to reserve inventory for product ID: {} with quantity: {}", product.getId(), qty);
+
+        // Refresh product to ensure we have fresh data
+        Product refreshedProduct = productRepository.findById(product.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        Inventory inventory = inventoryRepository.findByProduct(refreshedProduct)
+                .orElseThrow(() -> {
+                    logger.error("Inventory record not found for product ID: {}", refreshedProduct.getId());
+                    return new ResourceNotFoundException("Inventory missing");
+                });
+
+        logger.debug("Current available quantity: {} for product ID: {}", inventory.getAvailableQuantity(),
+                refreshedProduct.getId());
+
+        if (inventory.getAvailableQuantity() == null || inventory.getAvailableQuantity() < qty) {
+            int availableQty = inventory.getAvailableQuantity() != null ? inventory.getAvailableQuantity() : 0;
+            logger.warn("Insufficient stock for product ID: {}. Available: {}, Requested: {}",
+                    refreshedProduct.getId(), availableQty, qty);
             throw new BadRequestException("Insufficient stock");
         }
-        inventory.setAvailableQuantity(inventory.getAvailableQuantity() - qty);
-        inventoryRepository.save(inventory);
+
+        int newQuantity = inventory.getAvailableQuantity() - qty;
+        inventory.setAvailableQuantity(newQuantity);
+        Inventory saved = inventoryRepository.save(inventory);
+        logger.info("Inventory reserved successfully for product ID: {}. Previous: {}, New available quantity: {}",
+                refreshedProduct.getId(), inventory.getAvailableQuantity() + qty, saved.getAvailableQuantity());
     }
 
     private void restockInventory(Order order) {
@@ -308,7 +344,8 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Finds the best available delivery agent based on current workload.
-     * Returns the agent with the least number of active orders (PACKED or OUT_FOR_DELIVERY).
+     * Returns the agent with the least number of active orders (PACKED or
+     * OUT_FOR_DELIVERY).
      * Returns null if no active delivery agents are available.
      */
     private User findBestAvailableAgent() {
@@ -333,4 +370,3 @@ public class OrderServiceImpl implements OrderService {
         return bestAgent;
     }
 }
-

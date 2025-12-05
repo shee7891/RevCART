@@ -47,7 +47,11 @@ public class MailServiceImpl implements MailService {
                 ? configuredFrom 
                 : mailUsername;
             if (fromAddress != null && !fromAddress.isBlank()) {
-                helper.setFrom(fromAddress, appName + " Support");
+                try {
+                    helper.setFrom(fromAddress, appName + " Support");
+                } catch (java.io.UnsupportedEncodingException e) {
+                    helper.setFrom(fromAddress);
+                }
             }
             helper.setText(buildHtmlBody(otp), true);
             mailSender.send(message);

@@ -21,6 +21,9 @@ public class MailServiceImpl implements MailService {
     @Value("${spring.mail.from:#{null}}")
     private String configuredFrom;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
     @Value("${spring.application.name:RevCart}")
     private String appName;
 
@@ -38,8 +41,13 @@ public class MailServiceImpl implements MailService {
                     StandardCharsets.UTF_8.name());
             helper.setTo(email);
             helper.setSubject(appName + " OTP Verification");
-            if (configuredFrom != null && !configuredFrom.isBlank()) {
-//                helper.setFrom(configuredFrom, appName + " Support");
+            
+            // Set From header with fallback to mail username
+            String fromAddress = configuredFrom != null && !configuredFrom.isBlank() 
+                ? configuredFrom 
+                : mailUsername;
+            if (fromAddress != null && !fromAddress.isBlank()) {
+                helper.setFrom(fromAddress, appName + " Support");
             }
             helper.setText(buildHtmlBody(otp), true);
             mailSender.send(message);

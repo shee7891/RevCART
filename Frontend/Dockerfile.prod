@@ -4,12 +4,13 @@ FROM nginx:alpine
 # Remove default nginx content
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy built static files (Jenkins will place browser/ here)
+# Copy built browser files (Jenkins will prepare Frontend/browser)
 COPY browser/ /usr/share/nginx/html/
 
-# Keep optional static meta files if present
-COPY prerendered-routes.json /usr/share/nginx/html/ || true
-COPY 3rdpartylicenses.txt /usr/share/nginx/html/ || true
+# Copy optional static files if present in the build context (no shell operators)
+# If these files are not in the context, COPY will fail — Jenkins will add them if they exist.
+COPY prerendered-routes.json /usr/share/nginx/html/
+COPY 3rdpartylicenses.txt /usr/share/nginx/html/
 
 EXPOSE 80
-# default nginx CMD/ENTRYPOINT are fine
+# default CMD/ENTRYPOINT from nginx image is fine

@@ -97,30 +97,28 @@ stage('Docker: build & push') {
 
         # PREPARE FRONTEND CONTEXT (copy built dist -> Frontend/browser)
         Write-Host "Preparing frontend build context..."
-        Remove-Item -Recurse -Force Frontend\\browser -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force Frontend\browser -ErrorAction SilentlyContinue
 
-        if (-not (Test-Path -Path "Frontend\\dist\\frontend\\browser")) {
-          throw "Frontend build artifact not found at Frontend\\dist\\frontend\\browser - ensure Build Frontend stage completed successfully."
-        }
+if (-not (Test-Path -Path "Frontend\dist\frontend\browser")) {
+  throw "Frontend build artifact not found at Frontend\\dist\\frontend\\browser - ensure Build Frontend stage completed successfully."
+}
 
-        Copy-Item -Recurse -Force Frontend\\dist\\frontend\\browser Frontend\\browser
+# copy built browser
+Copy-Item -Recurse -Force Frontend\dist\frontend\browser Frontend\browser
 
-        $frontend = "$($env:FRONTEND_IMAGE):$($env:IMAGE_TAG)"
-        $frontendLatest = "$($env:FRONTEND_IMAGE):latest"
-        Write-Host "Building frontend image (prod) : $frontend"
-        docker build -t $frontend -f Frontend/Dockerfile.prod Frontend
-        if ($LASTEXITCODE -ne 0) { throw "Frontend docker build failed (exit $LASTEXITCODE)" }
-        docker tag $frontend $frontendLatest
+# copy optional static files (if they exist) into root of the context
+if (Test-Path -Path "Frontend\dist\frontend\prerendered-routes.json") {
+  Copy-Item -Force Frontend\dist\frontend\prerendered-routes.json Frontend\prerendered-routes.json
+} elseif (Test-Path -Path "Frontend\dist\frontend\browser\prerendered-routes.json") {
+  Copy-Item -Force Frontend\dist\frontend\browser\prerendered-routes.json Frontend\prerendered-routes.json
+}
 
-        Write-Host "Pushing images..."
-        docker push $backend
-        if ($LASTEXITCODE -ne 0) { throw "Push failed: $backend" }
-        docker push $backendLatest
-        if ($LASTEXITCODE -ne 0) { throw "Push failed: $backendLatest" }
-        docker push $frontend
-        if ($LASTEXITCODE -ne 0) { throw "Push failed: $frontend" }
-        docker push $frontendLatest
-        if ($LASTEXITCODE -ne 0) { throw "Push failed: $frontendLatest" }
+if (Test-Path -Path "Frontend\dist\frontend\3rdpartylicenses.txt") {
+  Copy-Item -Force Frontend\dist\frontend\3rdpartylicenses.txt Frontend\3rdpartylicenses.txt
+} elseif (Test-Path -Path "Frontend\dist\frontend\browser\3rdpartylicenses.txt") {
+  Copy-Item -Force Frontend\dist\frontend\browser\3rdpartylicenses.txt Frontend\3rdpartylicenses.txt
+}
+
 
         # cleanup: remove temporary Frontend/browser folder to keep workspace tidy
         Remove-Item -Recurse -Force Frontend\\browser -ErrorAction SilentlyContinue

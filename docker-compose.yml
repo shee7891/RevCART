@@ -1,6 +1,27 @@
 version: "3.8"
 
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: revcart-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: revcart
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    container_name: revcart-mongodb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
   backend:
     build:
       context: ./Backend
@@ -10,16 +31,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://host.docker.internal:3306/revcart"
-      SPRING_DATASOURCE_USERNAME: "revcart"
-      SPRING_DATASOURCE_PASSWORD: "RevcartPass123!"
-      SPRING_DATA_MONGODB_URI: "mongodb://host.docker.internal:27017/revcart_logs"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/revcart?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: "root"
+      SPRING_DATASOURCE_PASSWORD: "root"
+      SPRING_DATA_MONGODB_URI: "mongodb://mongodb:27017/revcart_logs"
+    depends_on:
+      - mysql
+      - mongodb
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-      interval: 20s
-      timeout: 5s
-      retries: 3
 
   frontend:
     build:
@@ -32,5 +51,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-    environment:
-      API_BASE_URL: "http://host.docker.internal:8080/api"
+
+volumes:
+  mysql_data:
+  mongo_data:

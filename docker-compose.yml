@@ -37,6 +37,10 @@ services:
       SPRING_DATA_MONGODB_URI: "mongodb://mongodb:27017/revcart_logs"
       REVCART_SECURITY_JWT-SECRET: "ChangeMeToAStrongSecretKeyForRevCartBackend123456"
       REVCART_SECURITY_JWT-EXPIRATION-MS: "86400000"
+    networks:
+      default:
+        aliases:
+          - backend
     depends_on:
       - mysql
       - mongodb

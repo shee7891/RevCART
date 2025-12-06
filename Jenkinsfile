@@ -231,8 +231,8 @@ pipeline {
             -e SPRING_DATASOURCE_URL="jdbc:mysql://revcart-mysql:3306/revcart?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true" `
             -e SPRING_DATASOURCE_USERNAME=root -e SPRING_DATASOURCE_PASSWORD=root `
             -e SPRING_DATA_MONGODB_URI="mongodb://revcart-mongodb:27017/revcart_logs" `
-            -e REVCART_SECURITY_JWTSECRET="ChangeMeToAStrongSecretKeyForRevCartBackend123456" `
-            -e REVCART_SECURITY_JWTEXPIRATIONMS=86400000 `
+            -e REVCART_SECURITY_JWT_SECRET="ChangeMeToAStrongSecretKeyForRevCartBackend123456" `
+            -e REVCART_SECURITY_JWT_EXPIRATION_MS=86400000 `
             -p 8080:8080 amanpardeshi01/revcart-backend:latest
 
           Start-Sleep -Seconds 10

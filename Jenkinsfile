@@ -206,24 +206,43 @@ pipeline {
       steps {
         powershell '''
           $ErrorActionPreference = 'Stop'
-          Write-Host "Deploying containers locally..."
+          Write-Host "Deploying containers..."
 
           # Stop and remove existing containers
-          docker-compose down
+          docker stop revcart-backend revcart-frontend revcart-mysql revcart-mongodb -ErrorAction SilentlyContinue
+          docker rm revcart-backend revcart-frontend revcart-mysql revcart-mongodb -ErrorAction SilentlyContinue
 
-          # Pull latest images
-          docker pull amanpardeshi01/revcart-backend:latest
-          docker pull amanpardeshi01/revcart-frontend:latest
+          # Create network if not exists
+          docker network create revcart-network -ErrorAction SilentlyContinue
 
-          # Start all services
-          docker-compose up -d
+          # Start MySQL
+          docker run -d --name revcart-mysql --network revcart-network `
+            -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=revcart `
+            -p 3307:3306 mysql:8.0
 
-          # Wait for services
-          Start-Sleep -Seconds 20
+          # Start MongoDB
+          docker run -d --name revcart-mongodb --network revcart-network `
+            -p 27018:27017 mongo:7
 
-          # Show status
-          docker-compose ps
+          Start-Sleep -Seconds 10
 
+          # Start Backend
+          docker run -d --name revcart-backend --network revcart-network --network-alias backend `
+            -e SPRING_DATASOURCE_URL="jdbc:mysql://revcart-mysql:3306/revcart?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true" `
+            -e SPRING_DATASOURCE_USERNAME=root -e SPRING_DATASOURCE_PASSWORD=root `
+            -e SPRING_DATA_MONGODB_URI="mongodb://revcart-mongodb:27017/revcart_logs" `
+            -e REVCART_SECURITY_JWTSECRET="ChangeMeToAStrongSecretKeyForRevCartBackend123456" `
+            -e REVCART_SECURITY_JWTEXPIRATIONMS=86400000 `
+            -p 8080:8080 amanpardeshi01/revcart-backend:latest
+
+          Start-Sleep -Seconds 10
+
+          # Start Frontend
+          docker run -d --name revcart-frontend --network revcart-network `
+            -p 4200:80 amanpardeshi01/revcart-frontend:latest
+
+          Start-Sleep -Seconds 5
+          docker ps
           Write-Host "Deployment complete!"
         '''
       }

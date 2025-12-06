@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-jammy
+FROM --platform=linux/amd64 eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY target/revcart-backend-1.0.0.jar /app/app.jar
 EXPOSE 8080

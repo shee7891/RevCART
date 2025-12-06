@@ -1,5 +1,5 @@
 # Frontend/Dockerfile.prod
-FROM nginx:alpine
+FROM --platform=linux/amd64 nginx:alpine
 
 # Remove default nginx content
 RUN rm -rf /usr/share/nginx/html/*

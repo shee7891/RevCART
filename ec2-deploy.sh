@@ -38,6 +38,10 @@ services:
   backend:
     image: amanpardeshi01/revcart-backend:latest
     container_name: revcart-backend
+    networks:
+      default:
+        aliases:
+          - backend
     ports:
       - "8080:8080"
     environment:
@@ -45,6 +49,8 @@ services:
       SPRING_DATASOURCE_USERNAME: "root"
       SPRING_DATASOURCE_PASSWORD: "root"
       SPRING_DATA_MONGODB_URI: "mongodb://mongodb:27017/revcart_logs"
+      REVCART_SECURITY_JWT_SECRET: "ChangeMeToAStrongSecretKeyForRevCartBackend123456"
+      REVCART_SECURITY_JWT_EXPIRATION_MS: "86400000"
     depends_on:
       - mysql
       - mongodb

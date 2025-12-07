@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { CartService } from '../../core/services/cart.service';
 import { StockService, StockValidationResult } from '../../core/services/stock.service';
 import { LucideAngularModule, ShoppingBag, Trash2, Plus, Minus, AlertCircle, RefreshCw } from 'lucide-angular';
@@ -15,6 +15,7 @@ import { LucideAngularModule, ShoppingBag, Trash2, Plus, Minus, AlertCircle, Ref
 export class CartComponent implements OnInit {
     cartService = inject(CartService);
     stockService = inject(StockService);
+    router = inject(Router);
 
     // Icons
     readonly ShoppingBag = ShoppingBag;
@@ -112,7 +113,7 @@ export class CartComponent implements OnInit {
 
                 if (result.isValid) {
                     // Stock is valid, proceed to checkout
-                    window.location.href = '/checkout';
+                    this.router.navigate(['/checkout']);
                 } else {
                     // Stock insufficient, show error
                     this.insufficientStockItems.set(result.insufficientItems);

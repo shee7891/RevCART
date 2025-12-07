@@ -301,7 +301,6 @@ export class CheckoutComponent implements OnInit {
     }
 
     private placeOrder(addressId: number): void {
-        // Map frontend payment method to backend enum
         const paymentMethodMap: { [key: string]: string } = {
             'card': 'RAZORPAY',
             'cod': 'COD'
@@ -314,12 +313,16 @@ export class CheckoutComponent implements OnInit {
             paymentMethod: paymentMethod
         };
 
-        this.http.post(`${environment.apiUrl}/orders/checkout`, checkoutRequest)
+        this.http.post<any>(`${environment.apiUrl}/orders/checkout`, checkoutRequest)
             .subscribe({
                 next: (order) => {
-                    this.isLoading.set(false);
-                    this.cartService.clearCart();
-                    this.router.navigate(['/orders']);
+                    if (this.formData().paymentMethod === 'card') {
+                        this.initiateRazorpayPayment(order.id);
+                    } else {
+                        this.isLoading.set(false);
+                        this.cartService.clearCart();
+                        this.router.navigate(['/orders']);
+                    }
                 },
                 error: (err) => {
                     this.isLoading.set(false);
@@ -340,6 +343,62 @@ export class CheckoutComponent implements OnInit {
                     } else {
                         this.errorMessage.set('Failed to place order. Please try again.');
                     }
+                }
+            });
+    }
+
+    private initiateRazorpayPayment(orderId: number): void {
+        this.http.post<any>(`${environment.apiUrl}/orders/${orderId}/razorpay`, {})
+            .subscribe({
+                next: (response) => {
+                    this.openRazorpayCheckout(orderId, response);
+                },
+                error: (err) => {
+                    this.isLoading.set(false);
+                    this.errorMessage.set('Failed to initiate payment. Please try again.');
+                    console.error('Razorpay initiation failed:', err);
+                }
+            });
+    }
+
+    private openRazorpayCheckout(orderId: number, paymentData: any): void {
+        const options = {
+            key: paymentData.key,
+            amount: paymentData.amount,
+            currency: paymentData.currency,
+            name: 'RevCart',
+            description: `Order #${orderId}`,
+            order_id: paymentData.orderId,
+            handler: (response: any) => {
+                this.verifyPayment(orderId, response);
+            },
+            modal: {
+                ondismiss: () => {
+                    this.isLoading.set(false);
+                    this.errorMessage.set('Payment cancelled. Your order is created but payment is pending.');
+                }
+            },
+            theme: {
+                color: '#10b981'
+            }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+    }
+
+    private verifyPayment(orderId: number, paymentResponse: any): void {
+        this.http.post(`${environment.apiUrl}/orders/${orderId}/verify-payment`, paymentResponse)
+            .subscribe({
+                next: () => {
+                    this.isLoading.set(false);
+                    this.cartService.clearCart();
+                    this.router.navigate(['/orders']);
+                },
+                error: (err) => {
+                    this.isLoading.set(false);
+                    this.errorMessage.set('Payment verification failed. Please contact support.');
+                    console.error('Payment verification failed:', err);
                 }
             });
     }

@@ -7,6 +7,7 @@ import com.revcart.dto.request.CheckoutRequest;
 import com.revcart.dto.request.DeliveryAssignmentRequest;
 import com.revcart.dto.request.OrderStatusUpdateRequest;
 import com.revcart.service.OrderService;
+import com.revcart.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,15 +18,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class OrderController {
 
     private final OrderService orderService;
+    private final PaymentService paymentService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, PaymentService paymentService) {
         this.orderService = orderService;
+        this.paymentService = paymentService;
     }
 
     @PostMapping("/orders/checkout")
@@ -65,6 +69,17 @@ public class OrderController {
     public ApiResponse<OrderDto> cancelOrder(@PathVariable Long id, @RequestParam(required = false) String reason) {
         OrderDto dto = orderService.cancelOrder(id, reason);
         return ApiResponse.<OrderDto>builder().success(true).data(dto).message("Order cancelled").build();
+    }
+
+    @PostMapping("/orders/{orderId}/razorpay")
+    public Map<String, Object> createRazorpayOrder(@PathVariable Long orderId) {
+        return paymentService.createRazorpayOrder(orderId);
+    }
+
+    @PostMapping("/orders/{orderId}/verify-payment")
+    public ApiResponse<OrderDto> verifyPayment(@PathVariable Long orderId, @RequestBody Map<String, String> paymentData) {
+        OrderDto order = paymentService.verifyRazorpayPayment(orderId, paymentData);
+        return ApiResponse.<OrderDto>builder().success(true).data(order).message("Payment verified").build();
     }
 }
 

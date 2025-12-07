@@ -106,7 +106,13 @@ public class OrderServiceImpl implements OrderService {
         order.setUser(user);
         order.setShippingAddress(address);
         order.setStatus(OrderStatus.PLACED);
-        order.setPaymentStatus(PaymentStatus.PENDING);
+        
+        // Set payment status based on payment method
+        if (request.getPaymentMethod() != null && request.getPaymentMethod().toString().equals("COD")) {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+        } else {
+            order.setPaymentStatus(PaymentStatus.PENDING);
+        }
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getItems()) {
             logger.debug("Processing cart item - Product ID: {}, Quantity: {}", cartItem.getProduct().getId(),
@@ -132,7 +138,12 @@ public class OrderServiceImpl implements OrderService {
         logger.debug("Cart cleared and saved");
         paymentService.initiatePayment(saved.getId());
         logger.debug("Payment initiated for order ID: {}", saved.getId());
-        notificationService.pushOrderUpdate(user.getId(), "Order #" + saved.getId() + " placed successfully");
+        
+        // Only send notification for COD orders, Razorpay orders will notify after payment
+        if (request.getPaymentMethod() != null && request.getPaymentMethod().toString().equals("COD")) {
+            notificationService.pushOrderUpdate(user.getId(), "Order #" + saved.getId() + " placed successfully");
+        }
+        
         logger.info("Checkout completed successfully for order ID: {}", saved.getId());
         return OrderMapper.toDto(saved);
     }
